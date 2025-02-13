@@ -2,10 +2,10 @@ import os
 import ssl
 import socket
 from datetime import datetime, timezone, timedelta
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler
 import urllib.parse as urlparse
 import json
-from wsgiref.simple_server import make_server, WSGIRequestHandler
+from wsgiref.simple_server import make_server
 
 def get_ssl_dates(hostname):
     context = ssl.create_default_context()
@@ -49,13 +49,41 @@ class CustomHandler(SimpleHTTPRequestHandler):
 
 def make_wsgi_app():
     def simple_app(environ, start_response):
-        handler = CustomHandler
-        handler.protocol_version = 'HTTP/1.1'
-        handler(environ['wsgi.input'], environ['wsgi.errors'], environ['wsgi.url_scheme'], environ['wsgi.multithread'], environ['wsgi.multiprocess'], environ['wsgi.run_once'])
-        status = '200 OK'
-        headers = [('Content-type', 'application/json; charset=utf-8')]
-        start_response(status, headers)
-        return [b""]
+        path = environ.get('PATH_INFO', '')
+        if path.startswith('/check_ssl'):
+            query_string = environ.get('QUERY_STRING', '')
+            query_components = urlparse.parse_qs(query_string)
+            url = query_components.get('url', [None])[0]
+            if url:
+                try:
+                    established_date, expiry_date = get_ssl_dates(url)
+                    remaining_time = expiry_date - datetime.now(timezone.utc)
+                    valid = remaining_time >= timedelta(days=7)
+                    months = remaining_time.days // 30
+                    days = remaining_time.days % 30
+                    response = {
+                        'valid': valid,
+                        'established_date': established_date.isoformat(),
+                        'expiry_date': expiry_date.isoformat(),
+                        'remaining_time': f"{months} months, {days} days",
+                        'renew': remaining_time <= timedelta(days=7)
+                    }
+                except Exception as e:
+                    response = {'valid': False, 'error': str(e)}
+                status = '200 OK'
+                headers = [('Content-type', 'application/json')]
+                start_response(status, headers)
+                return [json.dumps(response).encode()]
+            else:
+                status = '400 Bad Request'
+                headers = [('Content-type', 'text/plain')]
+                start_response(status, headers)
+                return [b'Bad Request']
+        else:
+            status = '404 Not Found'
+            headers = [('Content-type', 'text/plain')]
+            start_response(status, headers)
+            return [b'Not Found']
 
     return simple_app
 
