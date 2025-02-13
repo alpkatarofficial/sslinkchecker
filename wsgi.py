@@ -1,16 +1,19 @@
 # wsgi.py
-from app import CustomHandler, HTTPServer
+from app import CustomHandler, HTTPServer, make_wsgi_app
 import os
 
 def create_app():
-    port = int(os.environ.get('PORT', 8000))
-    server_address = ('', port)
-    httpd = HTTPServer(server_address, CustomHandler)
-    return httpd
+    return make_wsgi_app()
 
 app = create_app()
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 8000))
+    server_address = ('', port)
+    httpd = HTTPServer(server_address, CustomHandler)
     print(f'Running server on port {port}...')
-    app.serve_forever()
-    
+    httpd.serve_forever()
+
+
+
+
