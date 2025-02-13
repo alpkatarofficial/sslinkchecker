@@ -47,7 +47,9 @@ class CustomHandler(SimpleHTTPRequestHandler):
             super().do_GET()
 
 if __name__ == '__main__':
-    server_address = ('', 8000)
+    port = int(os.environ.get('PORT', 8000))
+    server_address = ('', port)
     httpd = HTTPServer(server_address, CustomHandler)
-    print('Running server on port 8000...')
+    print(f'Running server on port {port}...')
     httpd.serve_forever()
+
