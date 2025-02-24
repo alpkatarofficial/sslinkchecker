@@ -1,10 +1,14 @@
 import os
 import ssl
 import socket
+import logging
 from datetime import datetime, timezone, timedelta
 from flask import Flask, request, jsonify, send_from_directory
 
 app = Flask(__name__)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 def get_ssl_dates(hostname):
     context = ssl.create_default_context()
@@ -18,6 +22,7 @@ def get_ssl_dates(hostname):
 @app.route('/check_ssl', methods=['GET'])
 def check_ssl():
     url = request.args.get('url')
+    app.logger.info(f"Received request to check SSL for URL: {url}")
     if url:
         try:
             established_date, expiry_date = get_ssl_dates(url)
@@ -32,10 +37,13 @@ def check_ssl():
                 'remaining_time': f"{months} months, {days} days",
                 'renew': remaining_time <= timedelta(days=7)
             }
+            app.logger.info(f"SSL check successful for URL: {url}")
         except Exception as e:
+            app.logger.error(f"Error checking SSL for URL: {url} - {str(e)}")
             response = {'valid': False, 'error': str(e)}
         return jsonify(response)
     else:
+        app.logger.error("No URL provided")
         return jsonify({'error': 'No URL provided'}), 400
 
 @app.route('/')
