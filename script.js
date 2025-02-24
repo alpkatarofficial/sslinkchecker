@@ -44,7 +44,7 @@ function showNotification(title, message) {
 
 function checkCertificate(index) {
     const website = websites[index].url;
-    fetch(`http://127.0.0.1:8000/check_ssl?url=${website}`)
+    fetch(`/check_ssl?url=${encodeURIComponent(website)}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Network response was not ok: ${response.statusText}`);
@@ -80,7 +80,7 @@ function updateTable() {
     tableBody.innerHTML = '';
     websites.forEach((website, index) => {
         const row = tableBody.insertRow();
-        row.insertCell(0).innerHTML = `<a style="color:#ffffff;"href="https://${website.url}" target="_blank">${website.url}</a>`;
+        row.insertCell(0).innerHTML = `<a style="color:#ffffff;" href="https://${website.url}" target="_blank">${website.url}</a>`;
         row.insertCell(1).innerHTML = `<span id="status-${index}">${website.status}</span>`;
         row.insertCell(2).innerHTML = `<span id="remaining-time-${index}">${website.remainingTime}</span>`;
         row.insertCell(3).innerHTML = `
